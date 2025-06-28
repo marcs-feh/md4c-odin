@@ -3,6 +3,7 @@ package md4c
 import "base:runtime"
 import "core:c"
 import "core:strings"
+import "core:io"
 
 foreign import md4c "md4c.o"
 
@@ -30,9 +31,17 @@ Parser_Flags_Permissive_Auto_Links :: Parser_Flags{.PERMISSIVE_EMAIL_AUTOLINKS, 
 
 Parser_Flags_No_HTML :: Parser_Flags{.NO_HTML_BLOCKS, .NO_HTML_SPANS}
 
-DIALECT_COMMONMARK :: Parser_Flags{}
+Parser_Flags_Commonmark :: Parser_Flags{}
 
-DIALECT_GITHUB :: Parser_Flags_Permissive_Auto_Links | {.TABLES, .TASK_LISTS, .STRIKETHROUGH}
+Parser_Flags_GitHub :: Parser_Flags_Permissive_Auto_Links | {.TABLES, .TASK_LISTS, .STRIKETHROUGH}
+
+Error :: union #shared_nil {
+	io.Error,
+	runtime.Allocator_Error,
+	enum u8 {
+		Parser_Error = 1,
+	},
+}
 
 Block_Type :: enum c.uint {
     /* <body>...</body> */
@@ -176,7 +185,7 @@ Align :: enum c.int {
     DEFAULT = 0,
     LEFT,
     CENTER,
-    RIGHT
+    RIGHT,
 }
 
 Parser :: struct {
@@ -245,36 +254,75 @@ foreign md4c {
 }
 
 @private
-Odin_Ctx :: struct {
-	builder: ^strings.Builder,
+Helper_Context :: struct {
 	ctx: runtime.Context,
+
+	builder: ^strings.Builder,
+	writer: io.Writer,
+	io_error: io.Error,
 }
 
 @private
-append_to_builder :: proc "c" (char: [^]c.char, size: u32, userdata: rawptr){
-	ctx := cast(^Odin_Ctx)userdata
-	context = ctx.ctx
+html_string_callback :: proc "c" (char: [^]c.char, size: u32, userdata: rawptr){
+	helper := cast(^Helper_Context)userdata
+	context = helper.ctx
 
 	data := cast([]byte)(char[:size])
-	append(&ctx.builder.buf, ..data)
+	append(&helper.builder.buf, ..data)
+}
+
+@private
+html_writer_callback :: proc "c" (char: [^]c.char, size: u32, userdata: rawptr){
+	helper := cast(^Helper_Context)userdata
+	context = helper.ctx
+
+	data := cast([]byte)(char[:size])
+
+	_, err := io.write(helper.writer, data)
+	if helper.io_error == nil {
+		helper.io_error = err
+	}
 }
 
 parse :: proc(source: string, parser: ^Parser, userdata: rawptr) -> bool {
 	return md_parse(raw_data(source), u32(len(source)), parser, userdata) >= 0
 }
 
-to_html_string :: proc(source: string, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> string {
-	sb : strings.Builder
-	strings.builder_init_len_cap(&sb, 0, len(source))
+to_html_writer :: proc(source: string, w: io.Writer, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> (err: Error) {
+	ctx := Helper_Context {
+		ctx = context,
+		writer = w,
+	}
 
-	ctx := Odin_Ctx {
+	res := md_html(raw_data(source), u32(len(source)), html_writer_callback, &ctx, parser_flags, renderer_flags)
+
+	if res < 0 {
+		err = .Parser_Error
+	}
+	else {
+		err = ctx.io_error
+	}
+
+	return
+}
+
+to_html_string :: proc(source: string, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> (html: string, err: Error) {
+	sb : strings.Builder
+	strings.builder_init_len_cap(&sb, 0, len(source)) or_return
+
+	ctx := Helper_Context {
 		builder = &sb,
 		ctx = context,
 	}
 
-	md_html(raw_data(source), u32(len(source)), append_to_builder, &ctx, parser_flags, renderer_flags)
+	res := md_html(raw_data(source), u32(len(source)), html_string_callback, &ctx, parser_flags, renderer_flags)
+	html = string(sb.buf[:])
 
-	return string(sb.buf[:])
+	if res < 0 {
+		err = .Parser_Error
+	}
+
+	return 
 }
 
 
