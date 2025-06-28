@@ -6,7 +6,6 @@ import "core:strings"
 
 foreign import md4c "md4c.o"
 
-
 Parser_Flag :: enum c.int {
 	COLLAPSE_WHITESPACE        = 1,  /* In MD_TEXT_NORMAL, collapse non-trivial whitespace into single ' ' */
 	PERMISSIVE_ATX_HEADERS     = 2,  /* Do not require space in ATX headers ( ###header ) */
@@ -180,19 +179,14 @@ Align :: enum c.int {
     RIGHT
 }
 
-
-
-// FLAG_PERMISSIVEAUTOLINKS         (MD_FLAG_PERMISSIVEEMAILAUTOLINKS | MD_FLAG_PERMISSIVEURLAUTOLINKS | MD_FLAG_PERMISSIVEWWWAUTOLINKS)
-// FLAG_NOHTML                      (MD_FLAG_NOHTMLBLOCKS | MD_FLAG_NOHTMLSPANS)
-
-
 Parser :: struct {
 	/* Reserved. Set to zero. */
 	abi_version: u32,
+
 	/* Dialect options. Bitmask of MD_FLAG_xxxx values. */
     flags: Parser_Flags,
 
-    /* Caller-provided rendering callbacks.
+    /* Caller-provided rendering callbacks. These are required to be providaded
      *
      * For some block/span types, more detailed information is provided in a
      * type-specific structure pointed by the argument 'detail'.
@@ -215,7 +209,7 @@ Parser :: struct {
 
 	text: proc "c" (type: Text_Type, text: [^]c.char, size: u32, userdata: rawptr) -> i32,
 
-    /* Debug callback. Optional (may be NULL).
+    /* Debug callback. Optional (may be nil).
      *
      * If provided and something goes wrong, this function gets called.
      * This is intended for debugging and problem diagnosis for developers;
@@ -248,16 +242,6 @@ foreign md4c {
 		process_output: Input_Process_Proc, userdata: rawptr,
 		parser_flags: Parser_Flags, renderer_flags: Renderer_Flags,
 	) -> i32 ---
-
-// int32_t
-// md_html(const MD_CHAR* input, MD_SIZE input_size,
-//         void (*process_output)(const MD_CHAR*, MD_SIZE, void*),
-//         void* userdata, uint32_t parser_flags, uint32_t renderer_flags)
-
-}
-
-parse :: proc(source: string, parser: ^Parser, userdata: rawptr) -> bool {
-	return md_parse(raw_data(source), u32(len(source)), parser, userdata) >= 0
 }
 
 @private
@@ -275,7 +259,11 @@ append_to_builder :: proc "c" (char: [^]c.char, size: u32, userdata: rawptr){
 	append(&ctx.builder.buf, ..data)
 }
 
-to_html :: proc(source: string, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> string {
+parse :: proc(source: string, parser: ^Parser, userdata: rawptr) -> bool {
+	return md_parse(raw_data(source), u32(len(source)), parser, userdata) >= 0
+}
+
+to_html_string :: proc(source: string, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> string {
 	sb : strings.Builder
 	strings.builder_init_len_cap(&sb, 0, len(source))
 
