@@ -8,32 +8,32 @@ import "core:io"
 foreign import md4c "md4c.o"
 
 Parser_Flag :: enum c.int {
-	COLLAPSE_WHITESPACE        = 1,  /* In MD_TEXT_NORMAL, collapse non-trivial whitespace into single ' ' */
-	PERMISSIVE_ATX_HEADERS     = 2,  /* Do not require space in ATX headers ( ###header ) */
-	PERMISSIVE_URL_AUTOLINKS   = 3,  /* Recognize URLs as autolinks even without '<', '>' */
-	PERMISSIVE_EMAIL_AUTOLINKS = 4,  /* Recognize e-mails as autolinks even without '<', '>' and 'mailto:' */
-	NO_INDENTED_CODEBLOCKS     = 5,  /* Disable indented code blocks. (Only fenced code works.) */
-	NO_HTML_BLOCKS             = 6,  /* Disable raw HTML blocks. */
-	NO_HTML_SPANS              = 7,  /* Disable raw HTML (inline). */
-	TABLES                     = 8,  /* Enable tables extension. */
-	STRIKETHROUGH              = 9,  /* Enable strikethrough extension. */
-	PERMISSIVE_WWW_AUTOLINKS   = 10, /* Enable WWW autolinks (even without any scheme prefix, if they begin with 'www.') */
-	TASK_LISTS                 = 11, /* Enable task list extension. */
-	LATEXMATHSPANS             = 12, /* Enable $ and $$ containing LaTeX equations. */
-	WIKI_LINKS                 = 13, /* Enable wiki links extension. */
-	UNDERLINE                  = 14, /* Enable underline extension (and disables '_' for normal emphasis). */
-	HARD_SOFT_BREAKS           = 15, /* Force all soft breaks to act as hard breaks. */
+	Collapse_Whitespace        = 1,  /* In MD_TEXT_NORMAL, collapse non-trivial whitespace into single ' ' */
+	Permissive_ATX_Headers     = 2,  /* Do not require space in ATX headers ( ###header ) */
+	Permissive_URL_Autolinks   = 3,  /* Recognize URLs as autolinks even without '<', '>' */
+	Permissive_Email_Autolinks = 4,  /* Recognize e-mails as autolinks even without '<', '>' and 'mailto:' */
+	No_Indented_Code_Blocks    = 5,  /* Disable indented code blocks. (Only fenced code works.) */
+	No_HTML_Blocks             = 6,  /* Disable raw HTML blocks. */
+	No_HTML_Spans              = 7,  /* Disable raw HTML (inline). */
+	Tables                     = 8,  /* Enable tables extension. */
+	Strikethrough              = 9,  /* Enable strikethrough extension. */
+	Permissive_WWW_Autolinks   = 10, /* Enable WWW autolinks (even without any scheme prefix, if they begin with 'www.') */
+	Task_Lists                 = 11, /* Enable task list extension. */
+	Latex_Math_Spans           = 12, /* Enable $ and $$ containing LaTeX equations. */
+	Wiki_Links                 = 13, /* Enable wiki links extension. */
+	Underline                  = 14, /* Enable underline extension (and disables '_' for normal emphasis). */
+	Hard_Soft_Breaks           = 15, /* Force all soft breaks to act as hard breaks. */
 }
 
 Parser_Flags :: bit_set[Parser_Flag; u32]
 
-Parser_Flags_Permissive_Auto_Links :: Parser_Flags{.PERMISSIVE_EMAIL_AUTOLINKS, .PERMISSIVE_URL_AUTOLINKS, .PERMISSIVE_WWW_AUTOLINKS}
+Parser_Flags_Permissive_Auto_Links :: Parser_Flags{.Permissive_Email_Autolinks, .Permissive_URL_Autolinks, .Permissive_WWW_Autolinks}
 
-Parser_Flags_No_HTML :: Parser_Flags{.NO_HTML_BLOCKS, .NO_HTML_SPANS}
+Parser_Flags_No_HTML :: Parser_Flags{.No_HTML_Blocks, .No_HTML_Spans}
 
 Parser_Flags_Commonmark :: Parser_Flags{}
 
-Parser_Flags_GitHub :: Parser_Flags_Permissive_Auto_Links | {.TABLES, .TASK_LISTS, .STRIKETHROUGH}
+Parser_Flags_GitHub :: Parser_Flags_Permissive_Auto_Links | {.Tables, .Task_Lists, .Strikethrough}
 
 Error :: union #shared_nil {
 	io.Error,
@@ -45,34 +45,30 @@ Error :: union #shared_nil {
 
 Block_Type :: enum c.uint {
     /* <body>...</body> */
-    DOC = 0,
+    Document = 0,
 
     /* <blockquote>...</blockquote> */
-    QUOTE,
+    Quote,
 
-    /* <ul>...</ul>
-     * Detail: Structure UL_DETAIL. */
-    UL,
+    Unordered_List,
 
-    /* <ol>...</ol>
-     * Detail: Structure OL_DETAIL. */
-    OL,
+    Ordered_List,
 
     /* <li>...</li>
      * Detail: Structure LI_DETAIL. */
-    LI,
+    List_Item,
 
     /* <hr> */
-    HR,
+    Horizontal_Ruler,
 
     /* <h1>...</h1> (for levels up to 6)
      * Detail: Structure H_DETAIL. */
-    H,
+    Heading,
 
     /* <pre><code>...</code></pre>
      * Note the text lines within code blocks are terminated with '\n'
      * instead of explicit MD_TEXT_BR. */
-    CODE,
+    Code,
 
     /* Raw HTML block. This itself does not correspond to any particular HTML
      * tag. The contents of it _is_ raw HTML source intended to be put
@@ -80,31 +76,30 @@ Block_Type :: enum c.uint {
     HTML,
 
     /* <p>...</p> */
-    P,
+    Paragraph,
 
     /* <table>...</table> and its contents.
      * Detail: Structure TABLE_DETAIL (for TABLE),
      *         structure TD_DETAIL (for TH and TD)
      * Note all of these are used only if extension MD_FLAG_TABLES is enabled. */
-    TABLE,
-    THEAD,
-    TBODY,
-    TR,
-    TH,
-    TD
-
+    Table,
+    Table_Head,
+    Table_Body,
+    Table_Row,
+    Table_Header,
+    Table_Data,
 }
 
 Span_Type :: enum c.int {
     /* <em>...</em> */
-    EM,
+    Emphasis,
 
     /* <strong>...</strong> */
-    STRONG,
+    Strong,
 
     /* <a href="xxx">...</a>
      * Detail: Structure A_DETAIL. */
-    A,
+    Anchor,
 
     /* <img src="xxx">...</a>
      * Detail: Structure IMG_DETAIL.
@@ -112,46 +107,46 @@ Span_Type :: enum c.int {
      * If rendered into ALT attribute of HTML <IMG> tag, it's responsibility
      * of the parser to deal with it.
      */
-    IMG,
+    Image,
 
     /* <code>...</code> */
-    CODE,
+    Code,
 
     /* <del>...</del>
      * Note: Recognized only when MD_FLAG_STRIKETHROUGH is enabled.
      */
-    DEL,
+    Del,
 
     /* For recognizing inline ($) and display ($$) equations
      * Note: Recognized only when MD_FLAG_LATEXMATHSPANS is enabled.
      */
-    LATEXMATH,
-    LATEXMATH_DISPLAY,
+    Latex_Math,
+    Latex_Math_Display,
 
     /* Wiki links
      * Note: Recognized only when MD_FLAG_WIKILINKS is enabled.
      */
-    WIKILINK,
+    Wiki_Link,
 
     /* <u>...</u>
      * Note: Recognized only when MD_FLAG_UNDERLINE is enabled. */
-    U,
+    Underline,
 }
 
 /* Text is the actual textual contents of span. */
 Text_Type :: enum c.int {
     /* Normal text. */
-    NORMAL = 0,
+    Normal = 0,
 
     /* NULL character. CommonMark requires replacing NULL character with
      * the replacement char U+FFFD, so this allows caller to do that easily. */
-    NULLCHAR,
+    Null_Char,
 
     /* Line breaks.
      * Note these are not sent from blocks with verbatim output (MD_BLOCK_CODE
      * or MD_BLOCK_HTML). In such cases, '\n' is part of the text itself. */
-    BR,         /* <br> (hard break) */
-    SOFTBR,     /* '\n' in source text where it is not semantically meaningful (soft break) */
+    Hard_Break, /* <br> (hard break) */
+    Soft_Break, /* '\n' in source text where it is not semantically meaningful (soft break) */
 
     /* Entity.
      * (a) Named entity, e.g. &nbsp; 
@@ -163,13 +158,13 @@ Text_Type :: enum c.int {
      *
      * As MD4C is mostly encoding agnostic, application gets the verbatim
      * entity text into the MD_PARSER::text_callback(). */
-    ENTITY,
+    Entity,
 
     /* Text in a code block (inside MD_BLOCK_CODE) or inlined code (`code`).
      * If it is inside MD_BLOCK_CODE, it includes spaces for indentation and
      * '\n' for new lines. BR and SOFTBR are not sent for this
      * kind of text. */
-    CODE,
+    Code,
 
     /* Text is a raw HTML. If it is contents of a raw HTML block (i.e. not
      * an inline raw HTML), then BR and SOFTBR are not used.
@@ -178,14 +173,14 @@ Text_Type :: enum c.int {
 
     /* Text is inside an equation. This is processed the same way as inlined code
      * spans (`code`). */
-    LATEXMATH
+    Latex_Math
 }
 
 Align :: enum c.int {
-    DEFAULT = 0,
-    LEFT,
-    CENTER,
-    RIGHT,
+    Default = 0,
+    Left,
+    Center,
+    Right,
 }
 
 Parser :: struct {
@@ -242,6 +237,102 @@ Renderer_Flag :: enum c.int {
 }
 
 Renderer_Flags :: bit_set[Renderer_Flag; u32]
+
+/* String attribute.
+ *
+ * This wraps strings which are outside of a normal text flow and which are
+ * propagated within various detailed structures, but which still may contain
+ * string portions of different types like e.g. entities.
+ *
+ * So, for example, lets consider this image:
+ *
+ *     ![image alt text](http://example.org/image.png 'foo &quot; bar')
+ *
+ * The image alt text is propagated as a normal text via the MD_PARSER::text()
+ * callback. However, the image title ('foo &quot; bar') is propagated as
+ * MD_ATTRIBUTE in MD_SPAN_IMG_DETAIL::title.
+ *
+ * Then the attribute MD_SPAN_IMG_DETAIL::title shall provide the following:
+ *  -- [0]: "foo "   (substr_types[0] == MD_TEXT_NORMAL; substr_offsets[0] == 0)
+ *  -- [1]: "&quot;" (substr_types[1] == MD_TEXT_ENTITY; substr_offsets[1] == 4)
+ *  -- [2]: " bar"   (substr_types[2] == MD_TEXT_NORMAL; substr_offsets[2] == 10)
+ *  -- [3]: (n/a)    (n/a                              ; substr_offsets[3] == 14)
+ *
+ * Note that these invariants are always guaranteed:
+ *  -- substr_offsets[0] == 0
+ *  -- substr_offsets[LAST+1] == size
+ *  -- Currently, only MD_TEXT_NORMAL, MD_TEXT_ENTITY, MD_TEXT_NULLCHAR
+ *     substrings can appear. This could change only of the specification
+ *     changes.
+ */
+Attribute :: struct {
+	text: cstring,
+	size: u32,
+    substr_types: [^]Text_Type,
+    substr_offsets: [^]u32,
+}
+
+/* Detailed info for MD_BLOCK_UL. */
+Unordered_List_Detail :: struct {
+    is_tight: i32, /* Non-zero if tight list, zero if loose. */
+    mark: c.char,  /* Item bullet character in MarkDown source of the list, e.g. '-', '+', '*'. */
+};
+
+/* Detailed info for MD_BLOCK_OL. */
+Block_Ordered_List_Detail :: struct {
+    start: u32,             /* Start index of the ordered list. */
+    is_tight: b32,          /* Non-zero if tight list, zero if loose. */
+    mark_delimiter: c.char, /* Character delimiting the item marks in MarkDown source, e.g. '.' or ')' */
+}
+
+/* Detailed info for MD_BLOCK_LI. */
+Block_List_Item_Detail :: struct {
+	is_task: b32,          /* Can be non-zero only with MD_FLAG_TASKLISTS */
+    task_mark: c.char,     /* If is_task, then one of 'x', 'X' or ' '. Undefined otherwise. */
+    task_mark_offset: u32, /* If is_task, then offset in the input of the char between '[' and ']'. */
+}
+
+/* Detailed info for MD_BLOCK_H. */
+Block_Heading_Detail :: struct {
+	level: u32, /* Header level (1 - 6) */
+}
+
+/* Detailed info for MD_BLOCK_CODE. */
+Block_Code_Detail :: struct {
+    info: Attribute,
+    lang: Attribute,
+    fence_char: c.char, /* The character used for fenced code block; or zero for indented code block. */
+}
+
+/* Detailed info for MD_BLOCK_TABLE. */
+Block_Table_Detail :: struct {
+    col_count: u32,      /* Count of columns in the table. */
+    head_row_count: u32, /* Count of rows in the table header (currently always 1) */
+    body_row_count: u32, /* Count of rows in the table body */
+}
+
+/* Detailed info for MD_BLOCK_TH and MD_BLOCK_TD. */
+Block_Table_Data_Detail :: struct {
+    align: Align,
+}
+
+/* Detailed info for MD_SPAN_A. */
+Span_Anchor_Detail :: struct {
+    href: Attribute,
+    title: Attribute,
+    is_autolink: b32,
+}
+
+/* Detailed info for MD_SPAN_IMG. */
+Span_Image_Detail :: struct {
+    src: Attribute,
+    title: Attribute,
+}
+
+/* Detailed info for MD_SPAN_WIKILINK. */
+Span_Wiki_Link_Detail :: struct {
+	target: Attribute,
+}
 
 foreign md4c {
 	md_parse :: proc(text: [^]c.char, size: u32, parser: ^Parser, userdata: rawptr) -> i32 ---
