@@ -389,11 +389,9 @@ to_html_writer :: proc(source: string, w: io.Writer, parser_flags: Parser_Flags,
 	return
 }
 
-to_html_builder :: proc(source: string, builder: ^strings.Builder, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> (err: Error) {
-	sb : strings.Builder
-
+to_html_builder :: proc(source: string, sb: ^strings.Builder, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> (err: Error) {
 	ctx := Helper_Context {
-		builder = &sb,
+		builder = sb,
 		ctx = context,
 	}
 
