@@ -2,6 +2,7 @@ package md4c
 
 import "base:runtime"
 import "core:c"
+import "core:fmt"
 import "core:strings"
 import "core:io"
 
@@ -388,9 +389,8 @@ to_html_writer :: proc(source: string, w: io.Writer, parser_flags: Parser_Flags,
 	return
 }
 
-to_html_string :: proc(source: string, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> (html: string, err: Error) {
+to_html_builder :: proc(source: string, builder: ^strings.Builder, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> (err: Error) {
 	sb : strings.Builder
-	strings.builder_init_len_cap(&sb, 0, len(source)) or_return
 
 	ctx := Helper_Context {
 		builder = &sb,
@@ -398,13 +398,27 @@ to_html_string :: proc(source: string, parser_flags: Parser_Flags, renderer_flag
 	}
 
 	res := md_html(raw_data(source), u32(len(source)), html_string_callback, &ctx, parser_flags, renderer_flags)
-	html = string(sb.buf[:])
 
 	if res < 0 {
 		err = .Parser_Error
 	}
+	return
+}
+
+to_html_string :: proc(source: string, parser_flags: Parser_Flags, renderer_flags := Renderer_Flags{}) -> (html: string, err: Error) {
+	sb : strings.Builder
+	strings.builder_init_len_cap(&sb, 0, len(source)) or_return
+
+	err = to_html_builder(source, &sb, parser_flags, renderer_flags)
+	html = string(sb.buf[:])
 
 	return 
+}
+
+to_html :: proc {
+	to_html_builder,
+	to_html_string,
+	to_html_writer,
 }
 
 
