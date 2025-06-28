@@ -44,44 +44,40 @@ Error :: union #shared_nil {
 }
 
 Block_Type :: enum c.uint {
-    /* <body>...</body> */
+    // <body>...</body>
     Document = 0,
 
-    /* <blockquote>...</blockquote> */
+    // <blockquote>...</blockquote>
     Quote,
 
+	// <ul>...</ul>
     Unordered_List,
 
+	// <ol>...</ol>
     Ordered_List,
 
-    /* <li>...</li>
-     * Detail: Structure LI_DETAIL. */
+    // <li>...</li>
     List_Item,
 
-    /* <hr> */
+    // <hr>
     Horizontal_Ruler,
 
-    /* <h1>...</h1> (for levels up to 6)
-     * Detail: Structure H_DETAIL. */
+    // <h1>...</h1> (for levels up to 6)
     Heading,
 
-    /* <pre><code>...</code></pre>
-     * Note the text lines within code blocks are terminated with '\n'
-     * instead of explicit MD_TEXT_BR. */
+    // <pre><code>...</code></pre>
     Code,
 
-    /* Raw HTML block. This itself does not correspond to any particular HTML
-     * tag. The contents of it _is_ raw HTML source intended to be put
-     * in verbatim form to the HTML output. */
+    // Raw HTML block. This itself does not correspond to any particular HTML
+    // tag. The contents of it _is_ raw HTML source intended to be put
+    // in verbatim form to the HTML output. */
     HTML,
 
-    /* <p>...</p> */
+    // <p>...</p>
     Paragraph,
 
-    /* <table>...</table> and its contents.
-     * Detail: Structure TABLE_DETAIL (for TABLE),
-     *         structure TD_DETAIL (for TH and TD)
-     * Note all of these are used only if extension MD_FLAG_TABLES is enabled. */
+    // <table>...</table> and its contents.
+    // Note all of these are used only if extension Parser_Flag.Tables is enabled.
     Table,
     Table_Head,
     Table_Body,
@@ -91,45 +87,40 @@ Block_Type :: enum c.uint {
 }
 
 Span_Type :: enum c.int {
-    /* <em>...</em> */
+    // <em>...</em>
     Emphasis,
 
-    /* <strong>...</strong> */
+    // <strong>...</strong>
     Strong,
 
-    /* <a href="xxx">...</a>
-     * Detail: Structure A_DETAIL. */
+    // <a href="xxx">...</a>
     Anchor,
 
-    /* <img src="xxx">...</a>
-     * Detail: Structure IMG_DETAIL.
-     * Note: Image text can contain nested spans and even nested images.
-     * If rendered into ALT attribute of HTML <IMG> tag, it's responsibility
-     * of the parser to deal with it.
-     */
+    // <img src="xxx">...</a>
+    // Note: Image text can contain nested spans and even nested images.
+    // If rendered into ALT attribute of HTML <IMG> tag, it's responsibility
+    // of the parser to deal with it.
     Image,
 
-    /* <code>...</code> */
+    // <code>...</code>
     Code,
 
-    /* <del>...</del>
-     * Note: Recognized only when MD_FLAG_STRIKETHROUGH is enabled.
-     */
+    // <del>...</del>
+    // Note: Recognized only when Parser_Flag.Strikethrough is enabled.
     Del,
 
-    /* For recognizing inline ($) and display ($$) equations
-     * Note: Recognized only when MD_FLAG_LATEXMATHSPANS is enabled.
-     */
+    // For recognizing inline ($) and display ($$) equations
+    // Note: Recognized only when Parser_Flag.Latex_Math_Spans is enabled.
     Latex_Math,
     Latex_Math_Display,
 
-    /* Wiki links
-     * Note: Recognized only when MD_FLAG_WIKILINKS is enabled.
-     */
+    // Wiki links
+    // Note: Recognized only when Parser_Flag.Wiki_Links is enabled.
     Wiki_Link,
 
-    /* <u>...</u>
-     * Note: Recognized only when MD_FLAG_UNDERLINE is enabled. */
+
+    // <u>...</u>
+    // Note: Recognized only when Parser_Flag.Underline is enabled.
     Underline,
 }
 
@@ -230,9 +221,9 @@ Parser :: struct {
 Input_Process_Proc :: #type proc "c"(char: [^]c.char, size: u32, userdata: rawptr)
 
 Renderer_Flag :: enum c.int {
-	DEBUG,
-	VERBATIM_ENTITIES,
-	SKIP_UTF8_BOM,
+	Debug,
+	Verbatim_Entities,
+	Skip_UTF8_BOM,
 	XHTML,
 }
 
